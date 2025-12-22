@@ -23,8 +23,8 @@ if max_depth == 0:
 mlflow.set_experiment("Liver_Prediction_CI")
 
 # 2. LOAD DATA
-train_path = "indian_liver_prepocessing/train_df.csv"
-test_path = "indian_liver_prepocessing/test_df.csv"
+train_path = "indian_liver_preprocessing/train_df.csv"
+test_path = "indian_liver_preprocessing/test_df.csv"
 train_df = pd.read_csv(train_path)
 test_df = pd.read_csv(test_path)
 
