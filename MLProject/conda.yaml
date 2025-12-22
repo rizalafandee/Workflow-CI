@@ -1,0 +1,13 @@
+name: liver-env
+channels:
+  - conda-forge
+dependencies:
+  - python=3.9
+  - pip
+  - pip:
+    - pandas
+    - scikit-learn==1.2.2
+    - mlflow
+    - dagshub
+    - matplotlib
+    - seaborn
