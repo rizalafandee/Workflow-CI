@@ -20,7 +20,7 @@ if max_depth == 0:
     max_depth = None
 
 # Set Experiment Name
-mlflow.set_experiment("Liver_Prediction_GitHub")
+mlflow.set_experiment("Liver_Prediction_CI")
 
 # 2. LOAD DATA
 train_path = "indian_liver_prepocessing/train_df.csv"
