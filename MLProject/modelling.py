@@ -64,7 +64,8 @@ with mlflow.start_run():
     
     # E. ARTIFACTS (Simpan Fisik untuk di-Push ke GitHub)
     output_dir = "artifacts"
-    os.makedirs(output_dir, exist_ok=True)
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir, exist_ok=True)
 
     # 1. Metrics.txt (Lengkap)
     with open(f"{output_dir}/metrics.txt", "w") as f:
