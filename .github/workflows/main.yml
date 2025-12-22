@@ -37,14 +37,19 @@ jobs:
       # 2. PUSH ARTIFACTS KE GITHUB REPO
       - name: Commit and Push Artifacts
         run: |
-          # Konfigurasi Bot
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
           
-          # Add folder artifacts (hasil dari modelling.py)
-          git add artifacts/
+          # Masuk ke folder MLProject karena artifacts ada di sana
+          cd MLProject
           
-          # Commit & Push (Hanya jika ada perubahan)
+          # Cek apakah folder benar-benar ada
+          ls -d artifacts/ || echo "Folder artifacts belum tercipta"
+          
+          # Tambahkan semua perubahan
+          git add .
+          
+          # Commit & Push
           git commit -m "Auto-update: Training Artifacts [skip ci]" || echo "No changes to commit"
           git push
 
