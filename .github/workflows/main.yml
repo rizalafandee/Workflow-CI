@@ -31,7 +31,7 @@ jobs:
       - name: Run mlflow project
         run: |
           # Script ini akan menghasilkan folder 'artifacts' berisi metrics & gambar
-          mlflow run MLProject --env-manager=local 
+          mlflow run MLProject
        
       # 2. PUSH ARTIFACTS KE GITHUB REPO
       - name: Commit and Push Artifacts
