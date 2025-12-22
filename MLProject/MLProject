@@ -4,4 +4,10 @@ conda_env: conda.yaml
 
 entry_points:
   main:
-    command: "python modelling.py"
+    parameters:
+      n_estimators: {type: int, default: 100}
+      max_depth: {type: int, default: 10}
+      min_samples_split: {type: int, default: 5}
+      data_folder: {type: string, default: "indian_liver_preprocessing"}
+    command: >
+      python modelling.py {n_estimators} {max_depth} {min_samples_split} {data_folder}
