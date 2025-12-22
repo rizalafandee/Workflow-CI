@@ -19,9 +19,6 @@ min_samples_split = int(sys.argv[3]) if len(sys.argv) > 3 else 2
 if max_depth == 0:
     max_depth = None
 
-# Set Experiment Name
-mlflow.set_experiment("Liver_Prediction_CI")
-
 # 2. LOAD DATA
 train_path = "indian_liver_preprocessing/train_df.csv"
 test_path = "indian_liver_preprocessing/test_df.csv"
