@@ -6,88 +6,105 @@ import seaborn as sns
 import json
 import os
 import shutil
-import dagshub
+import sys
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import ParameterGrid
 from sklearn.metrics import (
-    accuracy_score, precision_score, recall_score, f1_score,
-    confusion_matrix, classification_report
+    accuracy_score, precision_score, recall_score, f1_score,
+    confusion_matrix, classification_report
 )
 
-# 1. KONFIGURASI DAGSHUB & MLFLOW
-dagshub.init(repo_owner='rizalafandee', repo_name='Liver_Prediction', mlflow=True)
-mlflow.set_experiment("Liver_Prediction_CI") 
+# 1. TANGKAP PARAMETER
+n_estimators = int(sys.argv[1]) if len(sys.argv) > 1 else 100
+max_depth = int(sys.argv[2]) if len(sys.argv) > 2 else 10
+min_samples_split = int(sys.argv[3]) if len(sys.argv) > 3 else 2
+if max_depth == 0:
+    max_depth = None
 
-# 2. LOAD DATA (PATH RELATIF BARU)
-train_df = pd.read_csv('indian_liver_preprocessing/train_df.csv')
-test_df = pd.read_csv('indian_liver_preprocessing/test_df.csv')
+# Set Experiment Name (Lokal)
+mlflow.set_experiment("Liver_Prediction_Docker")
 
+# 2. LOAD DATA
+train_path = "indian_liver_prepocessing/train_df.csv"
+test_path = "indian_liver_prepocessing/test_df.csv"
+
+train_df = pd.read_csv(train_path)
+test_df = pd.read_csv(test_path)
+
+# Pisahkan Fitur (X) dan Target (y)
 X_train = train_df.drop("is_patient", axis=1)
 y_train = train_df["is_patient"]
 X_test = test_df.drop("is_patient", axis=1)
 y_test = test_df["is_patient"]
 
+# Contoh input untuk log model
 input_example = X_train.iloc[:5]
 
-# 3. HYPERPARAMETER TUNING LOOP
-param_grid = {
-    "n_estimators": [50, 100],      
-    "max_depth": [None, 10],        
-    "min_samples_split": [2, 5] 
-}
+# 3. TRAINING & EVALUASI
+with mlflow.start_run():
+    # --- A. Train Model ---
+    model = RandomForestClassifier(
+        n_estimators=n_estimators, 
+        max_depth=max_depth, 
+        min_samples_split=min_samples_split,
+        random_state=42
+    )
+    model.fit(X_train, y_train)
+    
+    # --- B. Predict ---
+    y_pred = model.predict(X_test)
+    
+    # --- C. Hitung Metrik Lengkap ---
+    acc = accuracy_score(y_test, y_pred)
+    prec = precision_score(y_test, y_pred, average='weighted', zero_division=0)
+    rec = recall_score(y_test, y_pred, average='weighted', zero_division=0)
+    f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
 
-for params in ParameterGrid(param_grid):
-    
-    # Nama run disesuaikan parameter
-    nama_run = f"Run_Est-{params['n_estimators']}_Depth-{params['max_depth']}_Split-{params['min_samples_split']}"
+    # --- D. Log Metrics & Params ke MLflow ---
+    mlflow.log_param("n_estimators", n_estimators)
+    mlflow.log_param("max_depth", max_depth)
+    mlflow.log_param("min_samples_split", min_samples_split)
+    
+    mlflow.log_metric("accuracy", acc)
+    mlflow.log_metric("precision", prec)
+    mlflow.log_metric("recall", rec)
+    mlflow.log_metric("f1_score", f1)
+    
+    # --- E. ARTIFACTS (Simpan File Fisik) ---
+    os.makedirs("temp_artifacts", exist_ok=True)
 
-    with mlflow.start_run(run_name=nama_run):
-        # A. Train Model
-        model = RandomForestClassifier(random_state=42, **params)
-        model.fit(X_train, y_train)
-        
-        # B. Predict
-        y_pred = model.predict(X_test)
-        
-        # C. Metrics
-        acc = accuracy_score(y_test, y_pred)
-        prec = precision_score(y_test, y_pred, average='weighted', zero_division=0)
-        rec = recall_score(y_test, y_pred, average='weighted', zero_division=0)
-        f1 = f1_score(y_test, y_pred, average='weighted', zero_division=0)
-        
-        # D. Log ke DagsHub
-        mlflow.log_params(params)
-        mlflow.log_metric("accuracy", acc)
-        mlflow.log_metric("precision", prec)
-        mlflow.log_metric("recall", rec)
-        mlflow.log_metric("f1_score", f1)
+    # 1. Simpan Metrics Lengkap ke TXT
+    with open("temp_artifacts/metrics.txt", "w") as f:
+        f.write(f"Accuracy: {acc:.4f}\n")
+        f.write(f"Precision: {prec:.4f}\n")
+        f.write(f"Recall: {rec:.4f}\n")
+        f.write(f"F1 Score: {f1:.4f}\n")
+    mlflow.log_artifact("temp_artifacts/metrics.txt")
 
-        # D. ARTIFACTS
-        os.makedirs("temp_artifacts", exist_ok=True)
+    # 2. Simpan Confusion Matrix (Gambar)
+    cm = confusion_matrix(y_test, y_pred)
+    plt.figure(figsize=(6,5))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    plt.title(f"CM - Acc: {acc:.2f} | F1: {f1:.2f}")
+    plt.savefig("temp_artifacts/confusion_matrix.png")
+    plt.close()
+    mlflow.log_artifact("temp_artifacts/confusion_matrix.png")
 
-        # 1. Confusion Matrix
-        cm = confusion_matrix(y_test, y_pred)
-        plt.figure(figsize=(6,5))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
-        plt.title(f"CM - F1: {f1:.2f}")
-        plt.savefig("temp_artifacts/confusion_matrix.png")
-        plt.close()
-        mlflow.log_artifact("temp_artifacts/confusion_matrix.png")
+    # 3. Simpan Classification Report (HTML)
+    report = classification_report(y_test, y_pred, output_dict=True)
+    html_content = f"<html><body><h3>Classification Report</h3><pre>{json.dumps(report, indent=2)}</pre></body></html>"
+    with open("temp_artifacts/estimator.html", "w") as f:
+        f.write(html_content)
+    mlflow.log_artifact("temp_artifacts/estimator.html")
 
-        # 2. HTML Report
-        report = classification_report(y_test, y_pred, output_dict=True)
-        html_content = f"<html><body><pre>{json.dumps(report, indent=2)}</pre></body></html>"
-        with open("temp_artifacts/estimator.html", "w") as f:
-            f.write(html_content)
-        mlflow.log_artifact("temp_artifacts/estimator.html")
+    # 5. Log Model (Penting untuk Docker Build nanti)
+    mlflow.sklearn.log_model(
+        sk_model=model,
+        artifact_path="model",
+        input_example=input_example
+    )
 
-        # 3. Log Model & Schema
-        mlflow.sklearn.log_model(
-            sk_model=model,
-            artifact_path="model",
-            input_example=input_example
-        )
+    # Bersih-bersih folder temp
+    if os.path.exists("temp_artifacts"):
+        shutil.rmtree("temp_artifacts")
 
-        # Bersih-bersih folder temp
-        if os.path.exists("temp_artifacts"):
-            shutil.rmtree("temp_artifacts")
+ini modelling, sekarang sesuaikan semua file yang ada, dan apakah susah sesuai untuk py to drive nanti
