@@ -25,13 +25,14 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install mlflow==2.19.0
+          # Pasang semua library di sini agar tersedia untuk --env-manager=local
+          pip install mlflow==2.19.0 pandas scikit-learn matplotlib seaborn
           
       # 1. RUN TRAINING
       - name: Run mlflow project
         run: |
-          # Script ini akan menghasilkan folder 'artifacts' berisi metrics & gambar
-          mlflow run MLProject
+          # Tambahkan --env-manager=local agar dia tidak mencoba membuat conda sendiri
+          mlflow run MLProject --env-manager=local
        
       # 2. PUSH ARTIFACTS KE GITHUB REPO
       - name: Commit and Push Artifacts
