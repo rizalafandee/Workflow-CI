@@ -22,8 +22,8 @@ dagshub.init(repo_owner='rizalafandee', repo_name='Liver_Prediction', mlflow=Tru
 mlflow.set_experiment("Liver_Prediction_Complete") 
 
 # 2. LOAD DATA
-train_df = pd.read_csv('Membangun_model/indian_liver_preprocessing/train_df.csv')
-test_df = pd.read_csv('Membangun_model/indian_liver_preprocessing/test_df.csv')
+train_df = pd.read_csv('indian_liver_preprocessing/train_df.csv')
+test_df = pd.read_csv('indian_liver_preprocessing/test_df.csv')
 
 X_train = train_df.drop("is_patient", axis=1)
 y_train = train_df["is_patient"]
