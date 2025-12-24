@@ -14,7 +14,7 @@ flavors:
     sklearn_version: 1.8.0
 mlflow_version: 2.19.0
 model_size_bytes: 1008031
-model_uuid: 8103f71166754042aa6cc7340c9895cd
+model_uuid: 0681a9579902416b957c3f58516f498b
 saved_input_example_info:
   artifact_path: input_example.json
   pandas_orient: split
@@ -31,4 +31,4 @@ signature:
     "required": true}]'
   outputs: '[{"type": "long", "required": true}]'
   params: null
-utc_time_created: '2025-12-24 05:18:21.619581'
+utc_time_created: '2025-12-24 05:28:58.713326'
