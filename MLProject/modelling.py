@@ -62,19 +62,43 @@ with mlflow.start_run():
     mlflow.log_metric("recall", rec)
     mlflow.log_metric("f1_score", f1)
     
-    # E. ARTIFACTS (Simpan Fisik untuk di-Push ke GitHub)
+# E. ARTIFACTS (Simpan Fisik untuk di-Push ke GitHub)
     output_dir = "artifacts"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir, exist_ok=True)
 
-    # 1. Metrics.txt (Lengkap)
+    # --- PERBAIKAN START: SAVE MODEL KE FOLDER ARTIFACTS ---
+    model_artifact_path = os.path.join(output_dir, "model")
+    
+    # Hapus folder model lama jika ada agar tidak error saat save_model
+    import shutil
+    if os.path.exists(model_artifact_path):
+        shutil.rmtree(model_artifact_path)
+
+    # 1. Simpan model secara FISIK ke folder artifacts/model (Untuk GitHub)
+    mlflow.sklearn.save_model(
+        sk_model=model,
+        path=model_artifact_path,
+        input_example=input_example
+    )
+
+    # 2. Log Model ke MLflow (Untuk Docker Build & Dashboard)
+    # Kita arahkan artifact_path ke "model" agar sinkron
+    mlflow.sklearn.log_model(
+        sk_model=model,
+        artifact_path="model",
+        input_example=input_example
+    )
+    # --- PERBAIKAN END ---
+
+    # 1. Metrics.txt
     with open(f"{output_dir}/metrics.txt", "w") as f:
         f.write(f"Accuracy: {acc:.4f}\n")
         f.write(f"Precision: {prec:.4f}\n")
         f.write(f"Recall: {rec:.4f}\n")
         f.write(f"F1 Score: {f1:.4f}\n")
 
-    # 2. Confusion Matrix (Gambar)
+    # 2. Confusion Matrix
     cm = confusion_matrix(y_test, y_pred)
     plt.figure(figsize=(6,5))
     sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
@@ -87,10 +111,3 @@ with mlflow.start_run():
     html_content = f"<html><body><h3>Classification Report</h3><pre>{json.dumps(report, indent=2)}</pre></body></html>"
     with open(f"{output_dir}/estimator.html", "w") as f:
         f.write(html_content)
-
-    # 4. Log Model (Penting untuk Docker Build)
-    mlflow.sklearn.log_model(
-        sk_model=model,
-        artifact_path="model",
-        input_example=input_example
-    )
