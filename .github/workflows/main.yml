@@ -33,24 +33,25 @@ jobs:
         run: |
           # Tambahkan --env-manager=local agar dia tidak mencoba membuat conda sendiri
           mlflow run MLProject --env-manager=local
-       
-      # 2. PUSH ARTIFACTS KE GITHUB REPO
+
+      # BARU: Upload Artifacts ke UI GitHub Actions (Agar muncul seperti di gambar WA)
+      - name: Upload Training Artifacts to GitHub UI
+        uses: actions/upload-artifact@v3
+        with:
+          name: mlflow-artifacts
+          path: MLProject/artifacts/
+
+      # 2. PUSH ARTIFACTS KE GITHUB REPO (Tetap ada untuk simpan di repo)
       - name: Commit and Push Artifacts
         run: |
           git config --global user.name "GitHub Actions Bot"
           git config --global user.email "actions@github.com"
           
-          # Masuk ke folder MLProject karena artifacts ada di sana
           cd MLProject
+          # Tambahkan folder artifacts (termasuk folder model baru)
+          git add artifacts/
           
-          # Cek apakah folder benar-benar ada
-          ls -d artifacts/ || echo "Folder artifacts belum tercipta"
-          
-          # Tambahkan semua perubahan
-          git add .
-          
-          # Commit & Push
-          git commit -m "Auto-update: Training Artifacts [skip ci]" || echo "No changes to commit"
+          git commit -m "Auto-update: Training Artifacts & Saved Model [skip ci]" || echo "No changes to commit"
           git push
 
       # 3. DOCKER BUILD & PUSH
